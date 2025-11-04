@@ -8,6 +8,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
+  const [bertQuery, setBertQuery] = useState('');
+  const [bertNumResults, setBertNumResults] = useState(3);
+  const [bertResults, setBertResults] = useState(null);
+  const [bertLoading, setBertLoading] = useState(false);
+  const [bertError, setBertError] = useState('');
 
   const fetchStats = async () => {
     try {
@@ -61,6 +66,48 @@ function App() {
     }
   };
 
+  const handleBertSearch = async () => {
+    if (!bertQuery.trim()) {
+      setBertError('Please enter a search query');
+      return;
+    }
+
+    setBertLoading(true);
+    setBertError('');
+    setBertResults(null);
+
+    try {
+      const res = await fetch('/api/search/bert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: bertQuery,
+          n: bertNumResults,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('BERT search failed');
+      }
+
+      const data = await res.json();
+      setBertResults(data);
+    } catch (err) {
+      setBertError('Failed to search. Please try again.');
+      console.error(err);
+    } finally {
+      setBertLoading(false);
+    }
+  };
+
+  const handleBertKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleBertSearch();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
@@ -73,7 +120,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">News Search Engine</h1>
-                <p className="text-zinc-400 text-sm">This sample of BBC News is ranked by BM25 Algorithm</p>
+                <p className="text-zinc-400 text-sm">Powered by BM25 Algorithm</p>
               </div>
             </div>
             <button
@@ -228,6 +275,124 @@ function App() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
             <p className="text-zinc-400">Try adjusting your search query</p>
+          </div>
+        )}
+      </div>
+
+      {/* BERT + BM25 Search Section */}
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="bg-gradient-to-br from-emerald-950 to-green-950 rounded-2xl p-8 border-2 border-emerald-800">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-emerald-700 p-3 rounded-xl">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">BERT + BM25 Hybrid Search</h2>
+              <p className="text-emerald-300 text-sm">Advanced semantic search with BM25 reranking</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-emerald-300 text-sm font-medium mb-2">
+              Search Query
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={bertQuery}
+                onChange={(e) => setBertQuery(e.target.value)}
+                onKeyPress={handleBertKeyPress}
+                placeholder="Enter your search query for BERT analysis..."
+                className="w-full px-4 py-4 pl-12 bg-emerald-950 border border-emerald-700 rounded-xl text-white placeholder-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+              />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-emerald-300 text-sm font-medium mb-2">
+              Number of Results
+            </label>
+            <input
+              type="number"
+              value={bertNumResults}
+              onChange={(e) => setBertNumResults(Math.max(1, parseInt(e.target.value) || 1))}
+              min="1"
+              max="20"
+              className="w-full px-4 py-4 bg-emerald-950 border border-emerald-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {bertError && (
+            <div className="mb-6 bg-red-950 border border-red-900 rounded-lg p-4">
+              <p className="text-red-400 text-sm">{bertError}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleBertSearch}
+            disabled={bertLoading}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {bertLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-emerald-300 border-t-white rounded-full animate-spin" />
+                Searching with BERT...
+              </>
+            ) : (
+              <>
+                <Activity className="w-5 h-5" />
+                Search with BERT
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* BERT Results Section */}
+        {bertResults && bertResults.articles && bertResults.articles.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-2xl font-bold text-white">
+                BERT Results ({bertResults.articles.length})
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {bertResults.articles.map((article, index) => (
+                <div
+                  key={index}
+                  className="bg-gradient-to-br from-emerald-950 to-green-950 rounded-xl p-6 border-2 border-emerald-800 hover:border-emerald-700 transition-all duration-200 hover:scale-[1.01]"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-emerald-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Article {index + 1}</h3>
+                        <p className="text-sm text-emerald-300">
+                          Relevance Score: {bertResults.scores[index].toFixed(4)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-emerald-50 leading-relaxed">
+                    {article.length > 500 ? `${article.substring(0, 500)}...` : article}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {bertResults && bertResults.articles && bertResults.articles.length === 0 && (
+          <div className="mt-8 bg-gradient-to-br from-emerald-950 to-green-950 rounded-xl p-12 border-2 border-emerald-800 text-center">
+            <div className="bg-emerald-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
+            <p className="text-emerald-300">Try adjusting your search query</p>
           </div>
         )}
       </div>

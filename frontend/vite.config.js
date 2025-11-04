@@ -8,12 +8,12 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
     proxy:{
-      '/api': 'http://localhost:8000'
-      // '/api': {
-      //   target: 'https://kayanirani-nlp-bert-search-engine.hf.space',
-      //   changeOrigin: true,
-      //   secure: true
-      // }
+      // '/api': 'http://localhost:8000'
+      '/api': {
+        target: 'https://kayanirani-nlp-bert-search-engine.hf.space',
+        changeOrigin: true,
+        secure: true
+      }
     }
   }
 })
