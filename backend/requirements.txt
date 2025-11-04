@@ -1,0 +1,6 @@
+nltk
+gensim
+rank_bm25
+pandas
+fastapi
+uvicorn
